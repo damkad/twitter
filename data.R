@@ -5,27 +5,31 @@ library(rtweet)
 library(tidyverse)
 library(textdata)
 
-access_token = "74837730-8OkvwiwPzjifT3Kcn4P5rMgIHUG6xzdjlPO2d5jHi"
-access_secret = "3uK5fmVUMNvfJNMoa9QlGJ3QgHTOwSdPV971y2NfgZFvr"
-consumer_key = "NeCzYgSV1imbiUtUA1zFgov1d"
-consumer_secret = "76rUkoQpdxXLSnjAtCDWN9ZG4ABZaNYI3YESz5t3CkEYTtuDON"
+access_token = "74837730-xrNe1F0MvvPReCNdHVjwDy2SpYdkwpYdzFPbJxDMP"
+access_secret = "Vrv3uCG7JcFnV2M3w2hQP7odE7rj6ajwntylphRmxZulG"
+consumer_key = "FmwNDaJMCXCz42Dc5KOKc4ZtE"
+consumer_secret = "bJ8cKx0r95V3CB9KQYRTUJJHFSqA926UKrvbuBO9F4R7T1tQUP"
 
 create_token(
-  app = "birdsSearch",
+  app = "KWave",
   consumer_key,
   consumer_secret,
   access_token,
   access_secret,
   set_renv = TRUE
 )
+nigeria_coord = lookup_coords("Nigeria")
+england_coord = lookup_coords("England")
+Nigeria <- search_tweets("corvid OR corona OR virus OR coronavirus OR corvid19" , include_rts = FALSE, geocode = nigeria_coord, n = 77086, retryonratelimit = TRUE)
+England <- search_tweets("corvid OR corona OR virus OR coronavirus OR corvid19", include_rts = FALSE, geocode = england_coord, n = 77086, retryonratelimit = TRUE)
 
-Nigeria <- search_tweets("#Nigeria", n=100, include_rts = FALSE)
-England <- search_tweets("#England", n=100, include_rts = FALSE)
 
 tweets.Nigeria <- Nigeria %>% select(screen_name, text)
-
 tweets.England <- England %>% select(screen_name, text)
 
+#for equal length
+tweets.Nigeria <- tweets.Nigeria[1: min(nrow(tweets.England), nrow(tweets.Nigeria)), ]
+tweets.England <- tweets.England[1: min(nrow(tweets.England), nrow(tweets.Nigeria)), ]
 
 #preprocessing tweets
 head(tweets.Nigeria$text)
@@ -43,10 +47,17 @@ stem.tweets.Nigeria <- tweets.Nigeria %>% select(stripped_text) %>% unnest_token
 
 stem.tweets.England <- tweets.England %>% select(stripped_text) %>% unnest_tokens(word, stripped_text)
 
+
 #stemming
 clean.tweets.Nigeria <- stem.tweets.Nigeria %>% anti_join(stop_words)
+clean.tweets.Nigeria$word <- clean.tweets.Nigeria$word %>% str_replace_all(c(".*corona.*" = "covid19", "^(19)$" ="covid19", 
+                                                     ".*covid.*" ="covid19", ".*niger.*" = "nigeria", "^(naija)$" = "nigeria"))
+
 
 clean.tweets.England <- stem.tweets.England %>% anti_join(stop_words)
+clean.tweets.England$word <- clean.tweets.England$word %>% str_replace_all(c(".*corona.*" = "covid19", "^(19)$" ="covid19", 
+                                                                             ".*covid.*" ="covid19", ".*england.*" = "england"
+                                                                             , ".*unitedkingdom.*" = "uk"))
 
 
 #top 10 words in Nigeria
@@ -71,11 +82,13 @@ clean.tweets.England %>%
 
 
 #performing sentiment analysis using bing lexicon
+#atake off virus in sentiment
+sent_get <- get_sentiments("bing") %>% subset(word != "virus")
 
-x <- get_sentiments("bing") %>% filter(sentiment == "negative")
+#sent_get <- sent_get %>% rbind(c("covid19", "negative"))
 
 bing_Nigeria <- clean.tweets.Nigeria %>%
-  inner_join(get_sentiments("bing")) %>% 
+  inner_join(sent_get) %>% 
   count(word, sentiment, sort = TRUE) %>% ungroup()
 
 
@@ -86,7 +99,7 @@ bing_Nigeria %>% group_by(sentiment) %>% top_n(10) %>% ungroup() %>% mutate(word
 
 
 bing_England <- clean.tweets.England %>%
-  inner_join(get_sentiments("bing")) %>% 
+  inner_join(sent_get) %>% 
   count(word, sentiment, sort = TRUE) %>% ungroup()
 
 
@@ -102,7 +115,7 @@ bing_England %>% group_by(sentiment) %>% top_n(10) %>% ungroup() %>% mutate(word
 sentiment_bing = function(twt){
   twt_tbl = tibble(text = twt) %>% mutate(stripped_text = gsub("http\\s+", "", text)) %>% 
     unnest_tokens(word, stripped_text) %>% anti_join(stop_words) %>%
-    inner_join(get_sentiments("bing")) %>% count(word, sentiment, sort = TRUE) %>% 
+    inner_join(sent_get) %>% count(word, sentiment, sort = TRUE) %>% 
     ungroup() %>% 
     mutate(score = case_when(
       sentiment == "negative" ~ n*(-1),
@@ -124,7 +137,6 @@ sentiment_bing = function(twt){
 
 Nigeria_sent = lapply(Nigeria$text, function(x){sentiment_bing(x)})
 England_sent = lapply(England$text, function(x){sentiment_bing(x)})
-View(Nigeria_sent)
 
 
 
@@ -144,8 +156,7 @@ ggplot(country_sentiment, aes(x=score, fill=country)) +
   geom_histogram(bins = 15, alpha=0.6)+facet_grid(~country) + theme_bw()
 
 
-x <- clean.tweets.Nigeria$word %>% str_replace_all(c(".*corona.*" = "covid19", "^(19)$" ="covid19", 
-                                                ".*covid.*" ="covid19"))
+
 
 
 
