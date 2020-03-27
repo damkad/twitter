@@ -156,8 +156,11 @@ ggplot(country_sentiment, aes(x=score, fill=country)) +
   geom_histogram(bins = 15, alpha=0.6)+facet_grid(~country) + theme_bw()
 
 
+ggplot(country_sentiment[which(country_sentiment$country == "#Nigeria"),], aes(x=score)) + 
+  geom_histogram(bins = 15, alpha=0.6)  + theme_bw() 
 
-
+ggplot(country_sentiment[which(country_sentiment$country == "#England"),], aes(x=score)) + 
+  geom_histogram(bins = 15, alpha=0.6)  + theme_bw()
 
 
 
