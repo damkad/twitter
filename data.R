@@ -5,10 +5,10 @@ library(rtweet)
 library(tidyverse)
 library(textdata)
 
-access_token = "74837730-xrNe1F0MvvPReCNdHVjwDy2SpYdkwpYdzFPbJxDMP"
-access_secret = "Vrv3uCG7JcFnV2M3w2hQP7odE7rj6ajwntylphRmxZulG"
-consumer_key = "FmwNDaJMCXCz42Dc5KOKc4ZtE"
-consumer_secret = "bJ8cKx0r95V3CB9KQYRTUJJHFSqA926UKrvbuBO9F4R7T1tQUP"
+access_token = ""
+access_secret = ""
+consumer_key = ""
+consumer_secret = ""
 
 create_token(
   app = "KWave",
